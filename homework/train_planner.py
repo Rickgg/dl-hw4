@@ -62,7 +62,11 @@ def train(
             waypoints, waypoints_mask, track_left, track_right = batch["waypoints"].to(device), batch["waypoints_mask"].to(device), batch["track_left"].to(device), batch["track_right"].to(device)
             
             pred = model(track_left, track_right)
-            loss_val = loss_fn(pred, waypoints)
+
+            masked_pred = pred[waypoints_mask]  # Masked predicted waypoints
+            masked_target = waypoints[waypoints_mask]  # Masked ground truth waypoints
+
+            loss_val = loss_fn(masked_pred, masked_target)
             
             optim.zero_grad()
             loss_val.backward()
