@@ -48,8 +48,8 @@ def train(
     train_data = load_data("drive_data/train", shuffle=True, batch_size=batch_size, num_workers=2)
     val_data = load_data("drive_data/val", shuffle=False)
 
-    loss_fn = torch.nn.MSELoss().to(device)
-    optim = torch.optim.Adam(model.parameters(), lr=lr)
+    loss_fn = torch.nn.L1Loss().to(device)
+    optim = torch.optim.AdamW(model.parameters(), lr=lr)
     
     global_step = 0
     
@@ -63,10 +63,12 @@ def train(
             
             pred = model(track_left, track_right)
 
-            masked_pred = pred[waypoints_mask]  # Masked predicted waypoints
-            masked_target = waypoints[waypoints_mask]  # Masked ground truth waypoints
+            # masked_pred = pred[waypoints_mask]
+            # masked_target = waypoints[waypoints_mask]
 
-            loss_val = loss_fn(masked_pred, masked_target)
+            # loss_val = loss_fn(masked_pred, masked_target)
+
+            loss_val = loss_fn(pred, waypoints)
             
             optim.zero_grad()
             loss_val.backward()

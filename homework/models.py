@@ -27,16 +27,36 @@ class MLPPlanner(nn.Module):
         input_dim = 2 * n_track * 2  # Concatenated left and right boundary points
         output_dim = n_waypoints * 2  # Predicting (x, y) for each waypoint
 
+        hidden_dim = 128
+        dropout = 0.2
+
         self.mlp = nn.Sequential(
-            nn.Linear(input_dim, 64),
+            nn.Linear(input_dim, 128),
             nn.ReLU(),
-            nn.Linear(64, 128),
-            nn.ReLU(),
+            nn.BatchNorm1d(128),
+            nn.Dropout(dropout),
+
             nn.Linear(128, 256),
             nn.ReLU(),
+            nn.BatchNorm1d(256),
+            nn.Dropout(dropout),
+
             nn.Linear(256, 512),
             nn.ReLU(),
-            nn.Linear(512, output_dim)  # Output shape: (B, n_waypoints * 2)
+            nn.BatchNorm1d(512),
+            nn.Dropout(dropout),
+
+            nn.Linear(512, 256),
+            nn.ReLU(),
+            nn.BatchNorm1d(256),
+            nn.Dropout(dropout),
+
+            nn.Linear(256, 128),
+            nn.ReLU(),
+            nn.BatchNorm1d(128),
+            nn.Dropout(dropout),
+
+            nn.Linear(128, output_dim)  # Output shape: (B, n_waypoints * 2)
         )
 
     def forward(
