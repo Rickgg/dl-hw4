@@ -103,14 +103,40 @@ class TransformerPlanner(nn.Module):
         self,
         n_track: int = 10,
         n_waypoints: int = 3,
-        d_model: int = 64,
+        d_model: int = 128,    # Increased model size
+        nhead: int = 8,        # More attention heads
+        num_layers: int = 6,
     ):
         super().__init__()
 
         self.n_track = n_track
         self.n_waypoints = n_waypoints
+        self.d_model = d_model
 
+        # Learnable query embeddings (waypoints)
         self.query_embed = nn.Embedding(n_waypoints, d_model)
+
+        # Track boundary encoder (MLP with more depth)
+        self.lane_encoder = nn.Sequential(
+            nn.Linear(2, d_model),
+            nn.ReLU(),
+            nn.Linear(d_model, d_model),
+            nn.ReLU(),
+            nn.Linear(d_model, d_model),
+        )
+
+        # Transformer Decoder with more layers
+        decoder_layer = nn.TransformerDecoderLayer(d_model=d_model, nhead=nhead, dim_feedforward=256, batch_first=True)
+        self.transformer_decoder = nn.TransformerDecoder(decoder_layer, num_layers=num_layers)
+
+        # Output MLP with additional layers for better prediction
+        self.output_mlp = nn.Sequential(
+            nn.Linear(d_model, d_model),
+            nn.ReLU(),
+            nn.Linear(d_model, d_model // 2),
+            nn.ReLU(),
+            nn.Linear(d_model // 2, 2),  # Output (x, y)
+        )
 
     def forward(
         self,
@@ -131,7 +157,25 @@ class TransformerPlanner(nn.Module):
         Returns:
             torch.Tensor: future waypoints with shape (b, n_waypoints, 2)
         """
-        raise NotImplementedError
+        batch_size = track_left.shape[0]
+
+        # Encode track boundaries
+        track_left_enc = self.lane_encoder(track_left)  # (b, n_track, d_model)
+        track_right_enc = self.lane_encoder(track_right)  # (b, n_track, d_model)
+
+        # Concatenate left and right track boundaries
+        track_features = torch.cat([track_left_enc, track_right_enc], dim=1)  # (b, 2*n_track, d_model)
+
+        # Query embeddings for waypoints
+        queries = self.query_embed.weight.unsqueeze(0).expand(batch_size, -1, -1)  # (b, n_waypoints, d_model)
+
+        # Transformer decoder
+        decoder_out = self.transformer_decoder(queries, track_features)  # (b, n_waypoints, d_model)
+
+        # Predict (x, y) waypoints
+        waypoints = self.output_mlp(decoder_out)  # (b, n_waypoints, 2)
+
+        return waypoints
 
 
 class CNNPlanner(torch.nn.Module):
