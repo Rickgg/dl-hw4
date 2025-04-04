@@ -49,7 +49,7 @@ def train(
     val_data = load_data("drive_data/val", shuffle=False)
 
     loss_fn = torch.nn.L1Loss().to(device)
-    optim = torch.optim.AdamW(model.parameters(), lr=lr)
+    optim = torch.optim.Adam(model.parameters(), lr=0.0005)
     
     global_step = 0
     
@@ -63,12 +63,12 @@ def train(
             
             pred = model(track_left, track_right)
 
-            # masked_pred = pred[waypoints_mask]
-            # masked_target = waypoints[waypoints_mask]
+            masked_pred = pred[waypoints_mask]
+            masked_target = waypoints[waypoints_mask]
 
-            # loss_val = loss_fn(masked_pred, masked_target)
+            loss_val = loss_fn(masked_pred, masked_target)
 
-            loss_val = loss_fn(pred, waypoints)
+            # loss_val = loss_fn(pred, waypoints)
             
             optim.zero_grad()
             loss_val.backward()
@@ -103,8 +103,8 @@ if __name__ == "__main__":
 
     parser.add_argument("--exp_dir", type=str, default="logs")
     parser.add_argument("--model_name", type=str, default="mlp_planner")
-    parser.add_argument("--num_epoch", type=int, default=100)
-    parser.add_argument("--lr", type=float, default=1e-3)
+    parser.add_argument("--num_epoch", type=int, default=200)
+    parser.add_argument("--lr", type=float, default=4e-3)
     parser.add_argument("--seed", type=int, default=2024)
 
     # pass all arguments to train

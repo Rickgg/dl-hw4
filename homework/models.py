@@ -46,17 +46,22 @@ class MLPPlanner(nn.Module):
             nn.BatchNorm1d(512),
             nn.Dropout(dropout),
 
-            nn.Linear(512, 256),
+            nn.Linear(512, 512),
             nn.ReLU(),
-            nn.BatchNorm1d(256),
+            nn.BatchNorm1d(512),
             nn.Dropout(dropout),
 
-            nn.Linear(256, 128),
+            nn.Linear(512, 512),
             nn.ReLU(),
-            nn.BatchNorm1d(128),
+            nn.BatchNorm1d(512),
             nn.Dropout(dropout),
 
-            nn.Linear(128, output_dim)  # Output shape: (B, n_waypoints * 2)
+            nn.Linear(512, 512),
+            nn.ReLU(),
+            nn.BatchNorm1d(512),
+            nn.Dropout(dropout),
+
+            nn.Linear(512, output_dim)  # Output shape: (B, n_waypoints * 2)
         )
 
     def forward(
